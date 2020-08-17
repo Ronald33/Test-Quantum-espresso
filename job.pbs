@@ -1,0 +1,54 @@
+#!/bin/bash
+#PBS -N nombre_del_job
+#PBS -l walltime=720:00:00
+#PBS -l nodes=1:ppn=24
+#PBS -e $PBS_JOBID/output.log
+#PBS -o $PBS_JOBID/output.out
+cd $PBS_O_WORKDIR
+
+# Cargando los modulos necesarios
+source /home/modules/opt/gcc-9.2.0/env.sh
+source /home/modules/opt/openmpi-3.1.6/env.sh
+source /home/modules/opt/q-e-qe-6.5/env.sh
+###################################################################################
+
+# Asignando las variables
+use_scratch=false
+folder_results='results' # nombre de la carpeta en donde se almacenara los resultados
+folder_to_process='to-process' # nombre de la carpeta en donde se almacenara todos los ficheros utilizados por el job.
+###################################################################################
+
+# Creando las carpetas
+base=$PBS_JOBID
+mkdir $base
+mkdir $base/$folder_results # Creamos la carpeta de resultados
+###################################################################################
+
+# Mostrando informacion
+echo El directorio de trabajo es: $PBS_O_WORKDIR
+echo Los resultados son almacenados en: $PBS_O_WORKDIR/$folder_results
+echo La version de OpenMPI es: $(mpiexec --version | head -n 1 | cut -d " " -f 3)
+NP=$(wc -l < $PBS_NODEFILE)
+echo La cantidad de procesadores usados es: $NP
+###################################################################################
+
+# Utilizando scratch
+if [ $use_scratch = true ]; then
+    SCRDIR=/scratch/$USER/$PBS_JOBID
+    mkdir -p $SCRDIR
+    cp -r $folder_to_process $SCRDIR
+    cd $SCRDIR
+fi
+###################################################################################
+
+cd $folder_to_process
+
+# Ejecutando los comandos requeridos
+mpirun pw.x < scf.in > results.out
+###################################################################################
+
+# Copiando los resultados del scratch a la carpeta de trabajo
+mv *.out  $PBS_O_WORKDIR/$base/$folder_results # copiamos los resultados
+if [ $use_scratch = true ]; then
+    rm -r $SCRDIR # Eliminamos los archivos de scratch
+fi
