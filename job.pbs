@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -N nombre_del_job
+#PBS -N test-quantum-espresso
 #PBS -l walltime=720:00:00
 #PBS -l nodes=1:ppn=24
 #PBS -e $PBS_JOBID/output.log
